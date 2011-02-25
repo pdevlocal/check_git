@@ -28,13 +28,12 @@
 # and it will grow, of course.
 #PATH=""
 
-ECHO="/bin/echo"
-
 PROGNAME=`/usr/bin/basename $0`
 PROGPATH=`echo $0 | sed -e 's,[\\/][^\\/][^\\/]*$,,'`
 . $PROGPATH/utils.sh
 REVISION="0.1"
 TMP_BASE=/tmp
+ECHO="/bin/echo"
 GIT=/usr/bin/git
 RM=/bin/rm
 
@@ -119,16 +118,17 @@ done
 REPO_DIR=/tmp/repo.$RANDOM
 
 export GIT_SSH=$PROGPATH/check_git_exec_ssh.sh
-GIT_CLONE_ERROR=$($GIT clone $repo $REPO_DIR 2>&1)
+OUTPUT=$($GIT clone $repo $REPO_DIR 2>&1)
 GIT_CLONE_RESULT=$?
 
 if [ "$GIT_CLONE_RESULT" = "0" ]; then
     exitstatus=$STATE_OK
 else
-    $ECHO "Failed clone: $GIT_CLONE_ERROR"
+    $ECHO "Failed clone: $OUTPUT"
     exitstatus=$STATE_CRITICAL
     exit $exitstatus
 fi
+
 # attempt a push here
 if [ "$push" != "" ]; then
   export GIT_WORK_TREE=$REPO_DIR
@@ -136,20 +136,20 @@ if [ "$push" != "" ]; then
   echo "Committed by Nagios check_git: $(date)" >> $GIT_WORK_TREE/check_git_commits.txt
   $GIT add .
   NOW=$(date)
-  GIT_COMMIT_ERROR=$($GIT commit -m "Test commit by check_git $NOW")
-  GIT_PUSH_ERROR=$($GIT push 2>&1)
+  ERROR=$($GIT commit -m "Test commit by check_git $NOW")
+  OUTPUT="$OUTPUT
+    $ERROR"
+  ERROR="$($GIT push 2>&1)"
   GIT_PUSH_RESULT=$?
+  OUTPUT="$OUTPUT
+   $ERROR"
   if [ "$GIT_PUSH_RESULT" = "0" ]; then
     exitstatus=$STATE_OK
   else
-    $ECHO "Failed push: $GIT_PUSH_ERROR"
     exitstatus=$STATE_CRITICAL
   fi
 fi
 
-
-
-
 $RM -rf $REPO_DIR
-
+$ECHO "$OUTPUT"
 exit $exitstatus;
