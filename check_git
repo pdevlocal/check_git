@@ -1,6 +1,6 @@
-#! /bin/bash -x
+#! /bin/bash
 #
-# Git fetch/push monitoring
+# Git clone/push monitoring
 #
 # Usage: ./check_git url password private_key_file
 #
@@ -15,8 +15,11 @@
 #
 # Examples:
 #
+# git URL:
 #   check_git git://git.drupal.org/rfay/sandbox/11010.git
-#   check_git testuser@git.drupal.org:rfay/sandbox/11010.git --pass test --push
+# ssh URL:
+#   check_git testuser@git.drupal.org:rfay/sandbox/11010.git --key /path/to/id_file
+# ssh URL including a commit and a push:
 #   check_git testuser@git.drupal.org:rfay/sandbox/11010.git --key /path/to/id_file --push
 #
 # Paths to commands used in this script.  These
@@ -38,7 +41,7 @@ RM=/bin/rm
 #. $PROGPATH/utils.sh
 
 print_usage() {
-    echo "Usage: $PROGNAME repo_url [ --password ssh_password | --keyfile /path/to/id_file ] --push"
+    echo "Usage: $PROGNAME repo_url [ --keyfile /path/to/id_file ] [ --push ]"
     echo "Usage: $PROGNAME --help"
     echo "Usage: $PROGNAME --version"
 }
@@ -115,7 +118,7 @@ done
 # Directory to use to create the repo
 REPO_DIR=/tmp/repo.$RANDOM
 
-export GIT_SSH=$PROGPATH/exec_ssh.sh
+export GIT_SSH=$PROGPATH/check_git_exec_ssh.sh
 GIT_CLONE_ERROR=$($GIT clone $repo $REPO_DIR 2>&1)
 GIT_CLONE_RESULT=$?
 
@@ -130,10 +133,10 @@ fi
 if [ "$push" != "" ]; then
   export GIT_WORK_TREE=$REPO_DIR
   export GIT_DIR=$REPO_DIR/.git
-  echo $RANDOM >> $GIT_WORK_TREE/somefile.txt
+  echo "Committed by Nagios check_git: $(date)" >> $GIT_WORK_TREE/check_git_commits.txt
   $GIT add .
   NOW=$(date)
-  $GIT commit -m "Test commit by check_git $NOW"
+  GIT_COMMIT_ERROR=$($GIT commit -m "Test commit by check_git $NOW")
   GIT_PUSH_ERROR=$($GIT push 2>&1)
   GIT_PUSH_RESULT=$?
   if [ "$GIT_PUSH_RESULT" = "0" ]; then
