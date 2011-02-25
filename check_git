@@ -118,7 +118,8 @@ done
 REPO_DIR=/tmp/repo.$RANDOM
 
 export GIT_SSH=$PROGPATH/check_git_exec_ssh.sh
-OUTPUT=$($GIT clone $repo $REPO_DIR 2>&1)
+OUTPUT="$GIT clone $repo $REPO_DIR
+  $($GIT clone $repo $REPO_DIR 2>&1)"
 GIT_CLONE_RESULT=$?
 
 if [ "$GIT_CLONE_RESULT" = "0" ]; then
@@ -133,7 +134,7 @@ fi
 if [ "$push" != "" ]; then
   export GIT_WORK_TREE=$REPO_DIR
   export GIT_DIR=$REPO_DIR/.git
-  echo "Committed by Nagios check_git: $(date)" >> $GIT_WORK_TREE/check_git_commits.txt
+  echo "Committed by Nagios on $(hostname) check_git: $(date)" >> $GIT_WORK_TREE/check_git_commits.txt
   $GIT add .
   NOW=$(date)
   ERROR=$($GIT commit -m "Test commit by check_git $NOW")
