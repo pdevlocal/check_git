@@ -37,7 +37,9 @@ ECHO="/bin/echo"
 GIT=/usr/bin/git
 RM=/bin/rm
 
-#. $PROGPATH/utils.sh
+# Directory to use to create the repo
+REPO_DIR=/tmp/repo.$RANDOM
+trap "rm -Rf $REPO_DIR" EXIT
 
 print_usage() {
     echo "Usage: $PROGNAME repo_url [ --keyfile /path/to/id_file ] [ --push ]"
@@ -114,8 +116,6 @@ while test -n "$1"; do
 done
 
 
-# Directory to use to create the repo
-REPO_DIR=/tmp/repo.$RANDOM
 
 export GIT_SSH=$PROGPATH/check_git_exec_ssh.sh
 OUTPUT="$GIT clone $repo $REPO_DIR
@@ -151,6 +151,5 @@ if [ "$push" != "" ]; then
   fi
 fi
 
-$RM -rf $REPO_DIR
 $ECHO "$OUTPUT"
 exit $exitstatus;
