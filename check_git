@@ -118,14 +118,29 @@ done
 
 
 export GIT_SSH=$PROGPATH/check_git_exec_ssh.sh
-OUTPUT="$GIT clone $repo $REPO_DIR
-  $($GIT clone $repo $REPO_DIR 2>&1)"
-GIT_CLONE_RESULT=$?
+
+# Use git ls-remote if not testing push
+if [ "$push" == "" ]; then
+
+  OUTPUT="$GIT ls-remote $repo HEAD
+    $($GIT ls-remote $repo HEAD 2>&1)"
+  GIT_CLONE_RESULT=$?
+
+else
+
+  OUTPUT="$GIT clone $repo $REPO_DIR
+    $($GIT clone $repo $REPO_DIR 2>&1)"
+  GIT_CLONE_RESULT=$?
+
+fi
 
 if [ "$GIT_CLONE_RESULT" = "0" ]; then
     exitstatus=$STATE_OK
+elif [ "$GIT_CLONE_RESULT" = "2" ]; then
+    exitstatus=$STATE_WARNING
+    exit $exitstatus
 else
-    $ECHO "Failed clone: $OUTPUT"
+    $ECHO "Failed operation: $OUTPUT"
     exitstatus=$STATE_CRITICAL
     exit $exitstatus
 fi
