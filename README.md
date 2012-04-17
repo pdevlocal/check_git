@@ -27,7 +27,7 @@ Configuration:
 to configure it with the pubkey of the check_git_keyfile you made.
 If you do pushes, your pushes will be recorded in the file check_git_commits.txt.
 
-== License
+License
 
 check_git is released under the MIT license:
 
