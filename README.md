@@ -27,9 +27,9 @@ Configuration:
 
 3. (optional) Create a keyfile that can be used as the SSH identity file:
 
-	ssh-keygen -f /var/tmp/check_git_keyfile
-	sudo chown nagios /var/tmp/check_git_keyfile
-	sudo chmod 400 /var/tmp/check_git_keyfile
+        ssh-keygen -f /var/tmp/check_git_keyfile
+        sudo chown nagios /var/tmp/check_git_keyfile
+        sudo chmod 400 /var/tmp/check_git_keyfile
 
 4. Make or use a an appropriate repository.  If it's an ssh repo,
 you'll have to configure it with the pubkey of the `check_git_keyfile`
