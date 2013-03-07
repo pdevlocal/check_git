@@ -31,10 +31,9 @@ Configuration:
         sudo chown nagios /var/tmp/check_git_keyfile
         sudo chmod 400 /var/tmp/check_git_keyfile
 
-4. Make or use a an appropriate repository.  If it's an ssh repo,
-you'll have to configure it with the pubkey of the `check_git_keyfile`
-you made.  If you do pushes, your pushes will be recorded in the
-file `check_git_commits.txt`.
+4. Make or use an appropriate repository.  If it's an ssh repo, you'll have
+to configure it with the pubkey of the keyfile you made.  If you do pushes,
+your pushes will be recorded in the file `check_git_commits.txt`.
 
 5. See `check_git.cfg` for example definitions of nagios commands and services.
 
