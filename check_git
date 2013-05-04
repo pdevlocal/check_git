@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 #
 # Git clone/push monitoring
 #
@@ -22,23 +22,34 @@
 # ssh URL including a commit and a push:
 #   check_git testuser@git.drupal.org:rfay/sandbox/11010.git --key /path/to/id_file --push
 #
-# Paths to commands used in this script.  These
-# may have to be modified to match your system setup.
 # If a writable git URL is provided, it's assumed to be a test-only repository,
 # and it will grow, of course.
-#PATH=""
 
-PROGNAME=`/usr/bin/basename $0`
-PROGPATH=`echo $0 | sed -e 's,[\\/][^\\/][^\\/]*$,,'`
-. $PROGPATH/utils.sh
-REVISION="0.1"
-TMP_BASE=/tmp
-ECHO="/bin/echo"
-GIT=/usr/bin/git
-RM=/bin/rm
+PROGNAME=${0##*/}
+PROGPATH=${0%/*}
+REVISION='0.1.1'
+export PATH=/usr/local/bin:/usr/bin:/bin
+export TMPDIR=/tmp
+
+# Try to load the Nagios plugin utility library.  If we don't find it,
+# exit with an error.
+for d in $PROGPATH /usr/lib64/nagios/plugins /usr/lib/nagios/plugins /usr/local/libexec/nagios; do
+    [[ -f $d/utils.sh ]] && . $d/utils.sh
+done
+
+if [[ -z "$STATE_OK" ]]; then
+    # We hardcode an exit w/the STATE_UNKNOWN value if we can't find
+    # the plugin utility library.
+    echo "No Nagios plugin utility library was found; exiting"
+    exit 4
+fi
 
 # Directory to use to create the repo
-REPO_DIR=/tmp/repo.$RANDOM
+REPO_DIR=$(mktemp -d $TMPDIR/$PROGNAME.XXXXXXXXXXXX)
+if [[ ! -d $REPO_DIR ]]; then
+    echo "Could not create a temporary directory for the git repo; exiting"
+    exit $STATE_UNKNOWN
+fi
 trap "rm -Rf $REPO_DIR" EXIT
 
 print_usage() {
@@ -66,70 +77,53 @@ if [ $# -lt 1 ]; then
 fi
 
 # Grab the command line arguments
-
-repo=$1
-shift
-
 exitstatus=$STATE_WARNING #default
 while test -n "$1"; do
     case "$1" in
-        --help)
+        --help|-h)
             print_help
             exit $STATE_OK
             ;;
-        -h)
-            print_help
-            exit $STATE_OK
-            ;;
-        --version)
+        --version|-v)
             print_revision $PROGNAME $REVISION
             exit $STATE_OK
             ;;
-        -V)
-            print_revision $PROGNAME $REVISION
-            exit $STATE_OK
-            ;;
-        --password)
-            password=$2
-            shift
-            ;;
-        --keyfile)
+        --keyfile|--key|-k)
             keyfile=$2
-            export IDENTITY_FILE=$keyfile
             shift
+
+            echo "ssh -T -o StrictHostKeyChecking=no -i $keyfile \$*" > $REPO_DIR/.git-ssh
+            chmod 0700 $REPO_DIR/.git-ssh
+            export GIT_SSH=$REPO_DIR/.git-ssh
             ;;
         --push)
             push=1
-            shift
             ;;
         --exitstatus)
             exitstatus=$2
             shift
             ;;
-        *)
+        -*)
             echo "Unknown argument: $1"
             print_usage
             exit $STATE_UNKNOWN
+            ;;
+        *)
+            repo=$1
             ;;
     esac
     shift
 done
 
-export GIT_SSH=$PROGPATH/check_git_exec_ssh.sh
-
 # Use git ls-remote if not testing push
 if [ "$push" == "" ]; then
-
-  OUTPUT="$GIT ls-remote $repo HEAD
-    $($GIT ls-remote $repo HEAD 2>&1)"
-  GIT_CLONE_RESULT=$?
-
+    OUTPUT="git ls-remote $repo HEAD
+      $(git ls-remote $repo HEAD 2>&1)"
+    GIT_CLONE_RESULT=$?
 else
-
-  OUTPUT="$GIT clone $repo $REPO_DIR
-    $($GIT clone $repo $REPO_DIR 2>&1)"
-  GIT_CLONE_RESULT=$?
-
+    OUTPUT="git clone $repo $REPO_DIR
+      $(git clone $repo $REPO_DIR 2>&1)"
+    GIT_CLONE_RESULT=$?
 fi
 
 if [ "$GIT_CLONE_RESULT" = "0" ]; then
@@ -138,33 +132,33 @@ elif [ "$GIT_CLONE_RESULT" = "2" ]; then
     exitstatus=$STATE_WARNING
     exit $exitstatus
 else
-    $ECHO "Failed operation: $OUTPUT"
+    echo "Failed operation: $OUTPUT"
     exitstatus=$STATE_CRITICAL
     exit $exitstatus
 fi
 
 # attempt a push here
 if [ "$push" != "" ]; then
-  export GIT_WORK_TREE=$REPO_DIR
-  export GIT_DIR=$REPO_DIR/.git
-  echo "Committed by Nagios on $(hostname) check_git: $(date)" >> $GIT_WORK_TREE/check_git_commits.txt
-  $GIT add .
-  NOW=$(date)
-  ERROR=$($GIT commit -m "Test commit by check_git $NOW")
-  OUTPUT="$OUTPUT
-    $ERROR"
-  ERROR="$($GIT push 2>&1)"
-  GIT_PUSH_RESULT=$?
-  OUTPUT="$OUTPUT
-   $ERROR"
-  if [ "$GIT_PUSH_RESULT" = "0" ]; then
-    exitstatus=$STATE_OK
-  else
-    exitstatus=$STATE_CRITICAL
-  fi
+    export GIT_WORK_TREE=$REPO_DIR
+    export GIT_DIR=$REPO_DIR/.git
+    echo "Committed by Nagios on $(hostname) check_git: $(date)" >> $GIT_WORK_TREE/check_git_commits.txt
+    git add .
+    NOW=$(date)
+    ERROR=$(git commit -m "Test commit by check_git $NOW")
+    OUTPUT="$OUTPUT
+      $ERROR"
+    ERROR="$(git push 2>&1)"
+    GIT_PUSH_RESULT=$?
+    OUTPUT="$OUTPUT
+     $ERROR"
+    if [ "$GIT_PUSH_RESULT" = "0" ]; then
+        exitstatus=$STATE_OK
+    else
+        exitstatus=$STATE_CRITICAL
+    fi
 fi
 
-$ECHO "$OUTPUT"
+echo "$OUTPUT"
 exit $exitstatus;
 
 # Copyright (c) 2011, 2012 Randy Fay and Mark Waite
