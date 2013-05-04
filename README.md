@@ -16,15 +16,11 @@ system, install in `/usr/local/libexec/nagios`.
 Configuration:
 
 1. Copy these files to /usr/lib/nagios/plugins:
-
    * `check_git`
    * `check_git_exec_ssh.sh`
-
 2. Configure a check command like
-
    * `$USER1$/check_git $ARG1$`
    * `$USER1$/check_git $ARG1$ --keyfile $ARG2$ --push`
-
 3. (optional) Create a keyfile that can be used as the SSH identity file:
 
         ssh-keygen -f /var/tmp/check_git_keyfile
