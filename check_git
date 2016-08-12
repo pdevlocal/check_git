@@ -119,6 +119,7 @@ while test -n "$1"; do
     shift
 done
 
+start_time=$(date +%s)
 # Use git ls-remote if not testing push
 if [ "$push" == "" ]; then
     OUTPUT="git ls-remote $repo HEAD
@@ -129,6 +130,8 @@ else
       $(git clone $repo $REPO_DIR 2>&1)"
     GIT_CLONE_RESULT=$?
 fi
+end_time=$(date +%s)
+PERF_DATA="clone_duration=$(expr $end_time - $start_time)s"
 
 if [ "$GIT_CLONE_RESULT" = "0" ]; then
     exitstatus=$STATE_OK
@@ -156,7 +159,10 @@ if [ "$push" != "" ]; then
     ERROR=$(git commit -m "Test commit by check_git $NOW")
     OUTPUT="$OUTPUT
       $ERROR"
+    start_time=$(date +%s)
     ERROR="$(git push origin master:master 2>&1)"
+    end_time=$(date +%s)
+    PERF_DATA="$PERF_DATA push_duration=$(expr $end_time - $start_time)s"
     GIT_PUSH_RESULT=$?
     OUTPUT="$OUTPUT
      $ERROR"
@@ -167,7 +173,7 @@ if [ "$push" != "" ]; then
     fi
 fi
 
-echo "$OUTPUT"
+echo "$OUTPUT" \| $PERF_DATA
 exit $exitstatus;
 
 # Copyright (c) 2011, 2012 Randy Fay and Mark Waite
