@@ -151,7 +151,7 @@ if [ "$push" != "" ]; then
     ERROR=$(git commit -m "Test commit by check_git $NOW")
     OUTPUT="$OUTPUT
       $ERROR"
-    ERROR="$(git push 2>&1)"
+    ERROR="$(git push origin master:master 2>&1)"
     GIT_PUSH_RESULT=$?
     OUTPUT="$OUTPUT
      $ERROR"
