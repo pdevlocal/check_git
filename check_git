@@ -50,7 +50,12 @@ if [[ ! -d $REPO_DIR ]]; then
     echo "Could not create a temporary directory for the git repo; exiting"
     exit $STATE_UNKNOWN
 fi
-trap "rm -Rf $REPO_DIR" EXIT
+GIT_SSH=$(tempfile -d ~/.ssh --prefix git. --suffix .ssh -m 700)
+if [[ ! -x $GIT_SSH ]]; then
+    echo "Could not create a temporary git-ssh file; exiting"
+    exit $STATE_UNKNOWN
+fi
+trap "rm -Rf $REPO_DIR; rm -f $GIT_SSH" EXIT
 
 print_usage() {
     echo "Usage: $PROGNAME repo_url [ --keyfile /path/to/id_file ] [ --push ]"
@@ -92,9 +97,8 @@ while test -n "$1"; do
             keyfile=$2
             shift
 
-            echo "ssh -T -o StrictHostKeyChecking=no -i $keyfile \$*" > $REPO_DIR/.git-ssh
-            chmod 0700 $REPO_DIR/.git-ssh
-            export GIT_SSH=$REPO_DIR/.git-ssh
+            echo "ssh -T -o StrictHostKeyChecking=no -i $keyfile \$*" > $GIT_SSH
+            export GIT_SSH
             ;;
         --push)
             push=1
@@ -141,13 +145,18 @@ fi
 if [ "$push" != "" ]; then
     export GIT_WORK_TREE=$REPO_DIR
     export GIT_DIR=$REPO_DIR/.git
-    echo "Committed by Nagios on $(hostname) check_git: $(date)" >> $GIT_WORK_TREE/check_git_commits.txt
+    export GIT_AUTHOR_NAME='check-git'
+    export GIT_COMMITTER_NAME='check-git'
+    export GIT_COMMITTER_EMAIL="`id -u -n`@$(hostname --long)"
+    export GIT_AUTHOR_EMAIL="`id -u -n`@$(hostname --long)"
+
+    echo "Committed by Nagios on $(hostname) check_git: $(date)" >> $GIT_WORK_TREE/$(hostname).check_git_commits.txt
     git add .
     NOW=$(date)
     ERROR=$(git commit -m "Test commit by check_git $NOW")
     OUTPUT="$OUTPUT
       $ERROR"
-    ERROR="$(git push 2>&1)"
+    ERROR="$(git push origin master:master 2>&1)"
     GIT_PUSH_RESULT=$?
     OUTPUT="$OUTPUT
      $ERROR"
