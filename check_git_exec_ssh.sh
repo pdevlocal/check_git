@@ -3,7 +3,7 @@
 if [ "$IDENTITY_FILE" != "" ]; then
     IDFILE="-i$IDENTITY_FILE"
 fi
-CMD="ssh -oStrictHostKeyChecking=no $IDFILE"
+CMD="ssh -q -oStrictHostKeyChecking=no $IDFILE"
 exec $CMD "$@"
 
 # Copyright (c) 2011, 2012 Randy Fay and Mark Waite
