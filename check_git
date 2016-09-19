@@ -149,7 +149,8 @@ if [ "$push" != "" ]; then
     export GIT_COMMITTER_NAME='check-git'
     export GIT_COMMITTER_EMAIL="`id -u -n`@$(hostname --long)"
     export GIT_AUTHOR_EMAIL="`id -u -n`@$(hostname --long)"
-    echo "Committed by Nagios on $(hostname) check_git: $(date)" >> $GIT_WORK_TREE/check_git_commits.txt
+
+    echo "Committed by Nagios on $(hostname) check_git: $(date)" >> $GIT_WORK_TREE/$(hostname).check_git_commits.txt
     git add .
     NOW=$(date)
     ERROR=$(git commit -m "Test commit by check_git $NOW")
