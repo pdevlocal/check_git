@@ -50,7 +50,8 @@ if [[ ! -d $REPO_DIR ]]; then
     echo "Could not create a temporary directory for the git repo; exiting"
     exit $STATE_UNKNOWN
 fi
-GIT_SSH=$(tempfile -d ~/.ssh --prefix git. --suffix .ssh -m 700)
+GIT_SSH=$(mktemp --suffix=.ssh ~/.ssh/git.XXXXXX)
+chmod 0700 $GIT_SSH
 if [[ ! -x $GIT_SSH ]]; then
     echo "Could not create a temporary git-ssh file; exiting"
     exit $STATE_UNKNOWN
